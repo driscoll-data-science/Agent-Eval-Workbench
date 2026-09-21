@@ -43,6 +43,8 @@ packages = ["src/agent_eval_bench"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+# Suite fixtures and hidden tests are agent workspaces, not kit code; leave them verbatim.
+extend-exclude = ["suites/**/fixtures", "suites/**/hidden_tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]

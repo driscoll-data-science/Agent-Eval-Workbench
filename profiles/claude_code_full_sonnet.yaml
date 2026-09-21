@@ -1,0 +1,10 @@
+name: claude_code_full_sonnet
+adapter: claude_code
+model: claude-sonnet-5
+params:
+  clean_slate: false         # user settings, plugins, skills, MCP and CLAUDE.md all load
+  permission_mode: acceptEdits
+  allowed_tools: "Read,Edit,Write,Glob,Grep,Bash"
+  max_turns: 40
+  max_budget_usd: 2.0
+  effort: high

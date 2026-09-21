@@ -1,0 +1,8 @@
+name: fake_regressed
+adapter: fake
+model: fake-model-1
+params:
+  seed: 0
+  fail_rate: 0.4
+  extra_tool: Bash
+  verbose: true

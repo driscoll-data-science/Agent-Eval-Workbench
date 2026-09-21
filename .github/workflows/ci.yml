@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --dev
+      - name: Lint
+        run: uv run ruff check .
+      - name: Unit and end-to-end tests (fake agent, fake judge, ephemeral MLflow; no network, no keys)
+        env:
+          AEB_HOME: ${{ runner.temp }}/aeb-home
+        run: uv run pytest -q

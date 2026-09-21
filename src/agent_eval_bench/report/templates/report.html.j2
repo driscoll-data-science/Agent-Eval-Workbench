@@ -1,0 +1,421 @@
+{# Per-run report. Self-contained: no scripts, no external stylesheets, fonts or images. #}
+{% set run = d.run %}
+{% set v = d.verdict %}
+{% set cal = d.calibration %}
+{% set cost = d.cost.absolute %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>aeb report · {{ run.suite }} · {{ run.profile.name }} · {{ run.run_id|short }}</title>
+<style>
+:root{color-scheme:light;
+ --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--muted:#898781;
+ --grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);
+ --series-1:#2a78d6;--de-emph:#898781;
+ --good:#0ca30c;--warning:#fab219;--serious:#ec835a;--critical:#d03b3b;--good-text:#006300;}
+@media (prefers-color-scheme: dark){
+ :root{color-scheme:dark;
+  --page:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--muted:#898781;
+  --grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);
+  --series-1:#3987e5;--good-text:#0ca30c;}}
+*{box-sizing:border-box}
+html{background:var(--page)}
+body{margin:0;padding:16px;background:var(--page);color:var(--ink);
+ font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1080px;margin:0 auto}
+a{color:var(--series-1)}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:17px;margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--grid)}
+h3{font-size:15px;margin:0 0 6px}
+h2 .n{color:var(--muted);font-weight:500;margin-right:6px}
+header{max-width:1080px;margin:0 auto 20px}
+header .meta{color:var(--ink-2);margin:0 0 8px}
+header .meta code{font-size:12px}
+.links a{margin-right:14px}
+section{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+ padding:16px;margin:0 0 16px}
+.sub{color:var(--ink-2);margin:0 0 10px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;
+ white-space:pre-wrap;word-break:break-word;margin:0;padding:8px 10px;
+ background:var(--page);border:1px solid var(--grid);border-radius:6px}
+pre.out{max-height:14em;overflow:auto}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--grid);text-align:left;vertical-align:top}
+th{color:var(--ink-2);font-weight:600;font-size:12.5px}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.flag td{background:rgba(250,178,25,.10)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;
+ border:1px solid var(--border);font-weight:600;white-space:nowrap}
+.badge .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.badge.good .dot{background:var(--good)}
+.badge.warning .dot{background:var(--warning)}
+.badge.serious .dot{background:var(--serious)}
+.badge.critical .dot{background:var(--critical)}
+.badge .g{color:var(--ink-2)}
+.warn{border-left:4px solid var(--warning);padding:8px 12px;margin:10px 0;background:var(--page)}
+.warn strong{display:block}
+.note{border-left:4px solid var(--series-1);padding:8px 12px;margin:10px 0;background:var(--page)}
+.kpis{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+.kpi{flex:1 1 150px;min-width:0;padding:10px 12px;border:1px solid var(--grid);border-radius:6px}
+.kpi .l{color:var(--ink-2);font-size:12px}
+.kpi .v{font-size:22px;font-weight:600;line-height:1.2}
+.kpi .d{color:var(--ink-2);font-size:12px}
+.vgrid{display:grid;grid-template-columns:minmax(90px,120px) minmax(0,1fr) minmax(0,1fr);
+ gap:6px;margin:12px 0 6px}
+.vgrid .hd{color:var(--ink-2);font-size:12px;font-weight:600;align-self:end;padding:0 6px}
+.vgrid .rh{color:var(--ink-2);font-size:12px;font-weight:600;padding:8px 6px;align-self:center}
+.vgrid .cell{padding:8px 10px;border:1px solid var(--grid);border-radius:6px;font-size:12.5px;
+ color:var(--ink-2);min-height:56px}
+.vgrid .cell.active{border:2px solid var(--series-1);color:var(--ink)}
+.vgrid .cell.active .tag{display:block;font-weight:600;font-size:11px;color:var(--series-1);
+ text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.vgrid.inactive .cell{opacity:.6}
+.legend{display:flex;flex-wrap:wrap;gap:16px;color:var(--ink-2);font-size:12.5px;margin:0 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:14px;height:10px;border-radius:2px;background:var(--series-1)}
+.sw.base{background:var(--de-emph)}
+.sw.tick{width:2px;height:16px;border-radius:0;background:var(--ink-2)}
+.sw.ci{width:18px;height:2px;border-radius:0;background:var(--ink)}
+.chart{width:100%;height:auto;display:block;margin:4px 0 10px}
+.chart .grid{stroke:var(--grid);stroke-width:1}
+.chart .bar{fill:var(--series-1)}
+.chart .bar-base{fill:var(--de-emph)}
+.chart .baseline-tick{fill:var(--ink-2)}
+.chart .ci{stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.chart .ci-ring{stroke:var(--surface);stroke-width:6;stroke-linecap:round}
+.chart text{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--ink-2)}
+.chart .label{fill:var(--ink)}
+.chart .value{fill:var(--ink-2);font-variant-numeric:tabular-nums}
+.chart .muted{fill:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.fail{border:1px solid var(--grid);border-radius:6px;padding:12px;margin:0 0 12px}
+.fail h3 .rep{color:var(--muted);font-weight:500;font-size:13px;margin-left:6px}
+.fail .crit code{margin-right:4px}
+.fail dl{margin:8px 0}
+.fail dt{font-weight:600;font-size:12.5px;color:var(--ink-2)}
+.fail dd{margin:0 0 6px}
+.fail .err{color:var(--critical)}
+.fail .links{margin:8px 0 0;color:var(--ink-2)}
+footer{max-width:1080px;margin:0 auto;color:var(--ink-2);font-size:12.5px;padding:4px 0 24px}
+@media (max-width:640px){
+ body{padding:12px 16px}
+ h1{font-size:19px}
+ .vgrid{grid-template-columns:minmax(70px,90px) minmax(0,1fr) minmax(0,1fr)}
+ .vgrid .cell{font-size:11.5px;padding:6px 8px}
+}
+</style>
+</head>
+<body>
+<header>
+ <h1>{{ run.suite }} <span class="muted">/</span> {{ run.profile.name }}
+  <span class="muted">/</span> <code>{{ run.run_id|short }}</code></h1>
+ <p class="meta">
+  {{ run.n_cases }} cases ({{ run.n_tasks }} tasks &times; {{ run.reps }} reps) &middot;
+  {{ run.profile.adapter }} {% if run.profile.model %}{{ run.profile.model }}{% endif %} &middot;
+  started {{ run.started_at }}{% if run.finished_at %} &middot; finished {{ run.finished_at }}{% endif %}
+  {% if run.is_baseline %} &middot; <strong>current baseline</strong>{% endif %}
+ </p>
+ <p class="meta">
+  <span class="badge {{ v.quality|vclass }}"><span class="dot"></span>
+   <span class="g">{{ v.quality|vglyph }}</span>quality: {{ v.quality|label }}</span>
+  <span class="badge {{ v.behavior|vclass }}"><span class="dot"></span>
+   <span class="g">{{ v.behavior|vglyph }}</span>behavior: {{ v.behavior|label }}</span>
+  <span class="badge"><span class="dot"></span>pass rate {{ d.summary.pass_rate|pct }}</span>
+ </p>
+ <p class="links small">
+  <a href="../index.html">all runs</a>
+  <a href="report.json">report.json</a>
+  <a href="report.md">report.md</a>
+  {% if run.mlflow_run_url %}<a href="{{ run.mlflow_run_url }}">MLflow run</a>{% endif %}
+  <span class="muted">generated {{ d.generated_at }}</span>
+ </p>
+</header>
+<main>
+
+<section id="verdict">
+ <h2><span class="n">1</span>Verdict grid</h2>
+ <p class="sub">Quality (signed, vs baseline) against behavior (unsigned drift).
+  {% if v.baseline_run_id %}Baseline run <code>{{ v.baseline_run_id }}</code>.{% endif %}
+  {% if v.ci_level %}CI level {{ v.ci_level }}{% if v.n_pairs_total %}, {{ v.n_pairs_total }} paired cases{% endif %}{% if v.pairing %}, pairing {{ v.pairing }}{% endif %}.{% endif %}
+ </p>
+ <div class="note"><strong>{{ v.reading }}</strong></div>
+ <div class="vgrid{% if not v.active_cell %} inactive{% endif %}" role="table" aria-label="Verdict grid">
+  <div class="hd"></div>
+  {% for b in behavior_levels %}<div class="hd">behavior {{ b|label }}</div>{% endfor %}
+  {% for q in quality_levels %}
+   <div class="rh">quality {{ q|label }}</div>
+   {% for b in behavior_levels %}
+    {% set active = v.active_cell and v.active_cell[0] == q and v.active_cell[1] == b %}
+    <div class="cell{% if active %} active{% endif %}">
+     {% if active %}<span class="tag">this run</span>{% endif %}{{ readings[q ~ "|" ~ b] }}
+    </div>
+   {% endfor %}
+  {% endfor %}
+ </div>
+ {% if not v.active_cell %}
+ <p class="sub small">No cell is active: quality is <strong>{{ v.quality|label }}</strong> and behavior is
+  <strong>{{ v.behavior|label }}</strong>.</p>
+ {% endif %}
+</section>
+
+<section id="pass-rates">
+ <h2><span class="n">2</span>Per-criterion pass rates</h2>
+ {% if d.criteria.has_baseline %}
+ <div class="legend">
+  <span><i class="sw"></i>current pass rate</span>
+  <span><i class="sw tick"></i>baseline pass rate</span>
+  <span><i class="sw ci"></i>{% if d.criteria.ci_level %}{{ (d.criteria.ci_level * 100)|round|int }}% {% endif %}CI of the delta, anchored at the baseline</span>
+ </div>
+ {% else %}
+ <p class="sub">Current run only: {{ v.quality if v.quality == "no baseline set" else "no comparison available" }}.</p>
+ {% endif %}
+ {{ charts.pass_rates }}
+ <div class="tbl"><table>
+  <thead><tr><th>criterion</th><th>kind</th><th class="n">pass rate</th><th class="n">passed</th><th class="n">n</th>
+  {% if d.criteria.has_baseline %}<th class="n">baseline</th><th class="n">delta</th><th class="n">CI</th><th class="n">pairs</th><th>verdict</th>{% endif %}
+  </tr></thead>
+  <tbody>
+  {% for r in d.criteria.rows %}
+  <tr>
+   <td><code>{{ r.name }}</code></td><td class="muted">{{ r.kind }}</td>
+   <td class="n">{{ r.pass_rate|pct }}</td><td class="n">{{ r.n_pass }}</td><td class="n">{{ r.n }}</td>
+   {% if d.criteria.has_baseline %}
+   <td class="n">{{ r.baseline_mean|pct }}</td><td class="n">{{ r.delta|pp }}</td>
+   <td class="n">{% if r.ci_low is not none %}[{{ r.ci_low|pp }}, {{ r.ci_high|pp }}]{% else %}n/a{% endif %}</td>
+   <td class="n">{{ r.n_pairs if r.n_pairs is not none else "n/a" }}</td>
+   <td>{% if r.verdict %}<span class="badge {{ r.verdict|vclass }}"><span class="dot"></span><span class="g">{{ r.verdict|vglyph }}</span>{{ r.verdict|label }}</span>{% else %}<span class="muted">n/a</span>{% endif %}</td>
+   {% endif %}
+  </tr>
+  {% endfor %}
+  </tbody>
+ </table></div>
+</section>
+
+<section id="cost">
+ <h2><span class="n">3</span>Cost and latency</h2>
+ <p class="sub">Absolute first (list price from the versioned price table; judge cost kept separate), then relative to the baseline.</p>
+ <div class="kpis">
+  <div class="kpi"><div class="l">agent cost, total</div><div class="v">{{ cost.agent_cost_usd_total|usd }}</div>
+   <div class="d">{{ cost.agent_cost_usd_per_case|usd }} per case</div></div>
+  <div class="kpi"><div class="l">judge cost, total</div><div class="v">{{ cost.judge_cost_usd_total|usd }}</div>
+   <div class="d">{{ cost.judge_cost_usd_per_case|usd }} per case</div></div>
+  <div class="kpi"><div class="l">wall time, mean</div><div class="v">{{ cost.wall_ms_mean|ms }}</div>
+   <div class="d">p50 {{ cost.wall_ms_p50|ms }} &middot; p95 {{ cost.wall_ms_p95|ms }}</div></div>
+  <div class="kpi"><div class="l">tokens, total</div><div class="v">{{ cost.total_tokens|num }}</div>
+   <div class="d">{{ cost.input_tokens|num }} in &middot; {{ cost.output_tokens|num }} out</div></div>
+  <div class="kpi"><div class="l">cache tokens</div><div class="v">{{ (cost.cache_read_tokens + cost.cache_write_tokens)|num }}</div>
+   <div class="d">{{ cost.cache_read_tokens|num }} read &middot; {{ cost.cache_write_tokens|num }} write</div></div>
+  <div class="kpi"><div class="l">unknown agent cost</div><div class="v">{{ cost.agent_cost_unknown_share|pct(0) }}</div>
+   <div class="d">{{ cost.agent_cost_unknown_cases }} of {{ cost.n_cases }} cases{% if cost.agent_cost_unknown_models %} (no price for {{ cost.agent_cost_unknown_models|join(", ") }}){% endif %}</div></div>
+ </div>
+ {% if cost.agent_cost_unknown_cases %}
+ <div class="warn"><strong>Agent cost is incomplete.</strong> {{ cost.agent_cost_unknown_cases }} of {{ cost.n_cases }} cases have no list price
+  for their model, so the totals above count those cases as $0. Add the model to the price table and rebuild.</div>
+ {% endif %}
+ <div class="tbl"><table>
+  <thead><tr><th>metric</th><th class="n">value</th></tr></thead>
+  <tbody>
+   <tr><td>tool calls per case, mean</td><td class="n">{{ cost.tool_calls_per_case_mean|num }}</td></tr>
+   <tr><td>error rate</td><td class="n">{{ run.error_rate|pct }}</td></tr>
+   <tr><td>refusal rate</td><td class="n">{{ run.refusal_rate|pct }}</td></tr>
+   <tr><td>wall time p50 / p95</td><td class="n">{{ cost.wall_ms_p50|ms }} / {{ cost.wall_ms_p95|ms }}</td></tr>
+  </tbody>
+ </table></div>
+ <h3 style="margin-top:14px">Relative to baseline</h3>
+ {% if d.cost.relative %}
+ <div class="tbl"><table>
+  <thead><tr><th>metric</th><th>kind</th><th class="n">baseline</th><th class="n">current</th><th class="n">delta</th><th class="n">relative</th><th class="n">CI</th><th>verdict</th></tr></thead>
+  <tbody>
+  {% for m in d.cost.relative %}
+  <tr>
+   <td><code>{{ m.metric }}</code>{% if m.higher_is_better is not none %} <span class="muted small">({{ "higher" if m.higher_is_better else "lower" }} is better)</span>{% endif %}</td>
+   <td class="muted">{{ m.kind or "" }}</td>
+   <td class="n">{{ m.baseline_mean|metric(m.metric) }}</td>
+   <td class="n">{{ m.current_mean|metric(m.metric) }}</td>
+   <td class="n">{{ m.delta|metric(m.metric, true) }}</td>
+   <td class="n">{% if m.relative_delta is not none %}{{ "%+.1f"|format(m.relative_delta * 100) }}%{% else %}n/a{% endif %}</td>
+   <td class="n">{% if m.ci_low is not none %}[{{ m.ci_low|metric(m.metric, true) }}, {{ m.ci_high|metric(m.metric, true) }}]{% else %}n/a{% endif %}</td>
+   <td>{% if m.verdict %}<span class="badge {{ m.verdict|vclass }}"><span class="dot"></span><span class="g">{{ m.verdict|vglyph }}</span>{{ m.verdict|label }}</span>{% else %}<span class="muted">n/a</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+ </table></div>
+ {% else %}
+ <p class="sub">{{ v.quality if v.quality == "no baseline set" else "no comparison available" }}.</p>
+ {% endif %}
+</section>
+
+<section id="drift">
+ <h2><span class="n">4</span>Drift</h2>
+ {% set dr = d.drift %}
+ {% if dr.has_baseline %}
+ <p class="sub">Behavior verdict
+  <span class="badge {{ dr.overall_verdict|vclass }}"><span class="dot"></span><span class="g">{{ dr.overall_verdict|vglyph }}</span>{{ dr.overall_verdict|label }}</span>
+  vs baseline <code>{{ dr.baseline_run_id }}</code>{% if dr.adapter %} ({{ dr.adapter }}){% endif %}.
+  Thresholds: JS divergence {{ dr.js_threshold|flt }}, alpha {{ dr.alpha|flt }}.
+  Drift is unsigned; it is never a regression flag by itself.</p>
+ <h3>Tool categories, share of calls</h3>
+ <div class="legend">
+  <span><i class="sw base"></i>baseline ({{ dr.totals.baseline|num }} calls)</span>
+  <span><i class="sw"></i>current ({{ dr.totals.current|num }} calls)</span>
+ </div>
+ {% if charts.drift %}{{ charts.drift }}{% else %}<p class="sub">No tool calls in either run.</p>{% endif %}
+ <div class="two">
+  <div class="tbl"><table>
+   <thead><tr><th>category</th><th class="n">baseline</th><th class="n">share</th><th class="n">current</th><th class="n">share</th></tr></thead>
+   <tbody>
+   {% for c in dr.categories %}
+   <tr><td>{{ c.category }}</td><td class="n">{{ c.baseline_count|num }}</td><td class="n">{{ c.baseline_share|pct }}</td>
+    <td class="n">{{ c.current_count|num }}</td><td class="n">{{ c.current_share|pct }}</td></tr>
+   {% else %}
+   <tr><td colspan="5" class="muted">no tool calls</td></tr>
+   {% endfor %}
+   </tbody>
+  </table></div>
+  <div class="tbl"><table>
+   <thead><tr><th>raw tool name</th><th class="n">baseline</th><th class="n">current</th></tr></thead>
+   <tbody>
+   {% for t in dr.raw_tools %}
+   <tr><td><code>{{ t.name }}</code></td><td class="n">{{ t.baseline_count|num }}</td><td class="n">{{ t.current_count|num }}</td></tr>
+   {% else %}
+   <tr><td colspan="3" class="muted">no raw tool histogram</td></tr>
+   {% endfor %}
+   </tbody>
+  </table></div>
+ </div>
+ <h3 style="margin-top:14px">Distribution shifts</h3>
+ <div class="tbl"><table>
+  <thead><tr><th>distribution</th><th>kind</th><th>baseline</th><th>current</th><th class="n">JS divergence</th><th class="n">statistic</th><th class="n">p-value</th><th>verdict</th><th>note</th></tr></thead>
+  <tbody>
+  {% for s in dr.shifts %}
+  <tr>
+   <td>{{ s.name }}</td><td class="muted">{{ s.kind or "" }}</td>
+   <td class="small">{{ s.baseline_summary|kv }}</td><td class="small">{{ s.current_summary|kv }}</td>
+   <td class="n">{{ s.js_divergence|flt }}</td><td class="n">{{ s.statistic|flt }}</td><td class="n">{{ s.p_value|flt }}</td>
+   <td>{% if s.verdict %}<span class="badge {{ s.verdict|vclass }}"><span class="dot"></span><span class="g">{{ s.verdict|vglyph }}</span>{{ s.verdict|label }}</span>{% endif %}</td>
+   <td class="small">{{ s.note or "" }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="9" class="muted">no shifts recorded</td></tr>
+  {% endfor %}
+  </tbody>
+ </table></div>
+ {% else %}
+ <p class="sub">{{ dr.overall_verdict }}. Promote a run with <code>aeb baseline promote &lt;run&gt;</code> to enable drift detection.</p>
+ {% endif %}
+</section>
+
+<section id="calibration">
+ <h2><span class="n">5</span>Calibration status</h2>
+ <p class="sub">Judge <strong>{{ cal.judge_backend }}</strong> &middot; model <code>{{ cal.judge_model }}</code> &middot;
+  version <code>{{ cal.judge_version }}</code> &middot; thresholds: raw agreement &ge; {{ cal.thresholds.raw_agreement }}, kappa &ge; {{ cal.thresholds.kappa }}.</p>
+ {% if cal.same_family_warning %}
+ <div class="warn"><strong>Same model family: judge and agent.</strong> {{ cal.same_family_message }}</div>
+ {% endif %}
+ {% if cal.calibrated %}
+ <p>{{ cal.status }}{% if cal.calibrated_judge_model and cal.calibrated_judge_model != cal.judge_model %}
+  <span class="muted">(calibration was computed with judge model {{ cal.calibrated_judge_model }})</span>{% endif %}.</p>
+ <div class="tbl"><table>
+  <thead><tr><th>criterion</th><th class="n">n</th><th class="n">raw agreement</th><th class="n">kappa</th><th>flag</th></tr></thead>
+  <tbody>
+  {% for c in cal.per_criterion %}
+  <tr{% if c.below_threshold %} class="flag"{% endif %}>
+   <td><code>{{ c.name }}</code></td><td class="n">{{ c.n if c.n is not none else "n/a" }}</td>
+   <td class="n">{{ c.raw_agreement|pct }}</td><td class="n">{{ c.kappa|flt }}</td>
+   <td>{% if c.below_threshold %}<span class="badge warning"><span class="dot"></span><span class="g">○</span>below threshold</span>{% endif %}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">no per-criterion agreement recorded</td></tr>
+  {% endfor %}
+  </tbody>
+ </table></div>
+ {% if cal.flags %}
+ <div class="warn"><strong>Flags</strong>
+  <ul style="margin:4px 0 0 18px;padding:0">{% for f in cal.flags %}<li>{{ f }}</li>{% endfor %}</ul></div>
+ {% endif %}
+ {% else %}
+ <div class="warn"><strong>{{ cal.status }}</strong>
+  Label about 40 cases in the MLflow UI, then run <code>aeb labels pull</code> to compute agreement and kappa for this judge version.</div>
+ {% endif %}
+</section>
+
+<section id="run">
+ <h2><span class="n">6</span>Profile params and run metadata</h2>
+ <div class="two">
+  <div class="tbl"><table>
+   <thead><tr><th colspan="2">profile <code>{{ run.profile.name }}</code></th></tr></thead>
+   <tbody>
+    <tr><td>adapter</td><td>{{ run.profile.adapter }}</td></tr>
+    <tr><td>model</td><td>{{ run.profile.model if run.profile.model else "account default" }}</td></tr>
+    {% for k, val in run.profile.params.items()|sort %}
+    <tr><td><code>{{ k }}</code></td><td>{{ val }}</td></tr>
+    {% else %}
+    <tr><td colspan="2" class="muted">no params</td></tr>
+    {% endfor %}
+   </tbody>
+  </table></div>
+  <div class="tbl"><table>
+   <thead><tr><th colspan="2">run</th></tr></thead>
+   <tbody>
+    <tr><td>run id</td><td><code>{{ run.run_id }}</code></td></tr>
+    <tr><td>suite</td><td>{{ run.suite }} v{{ run.suite_version }}</td></tr>
+    <tr><td>reps &times; tasks</td><td>{{ run.reps }} &times; {{ run.n_tasks }} = {{ run.n_cases }} cases</td></tr>
+    <tr><td>started</td><td>{{ run.started_at }}</td></tr>
+    <tr><td>finished</td><td>{{ run.finished_at if run.finished_at else "not finished" }}{% if run.duration_s is not none %} ({{ (run.duration_s * 1000)|ms }}){% endif %}</td></tr>
+    <tr><td>judge</td><td>{{ run.judge.backend }} / {{ run.judge.model }} / <code>{{ run.judge.version }}</code></td></tr>
+    <tr><td>experiment</td><td>{{ run.experiment }} <span class="muted">({{ run.experiment_id }})</span></td></tr>
+    <tr><td>tracking URI</td><td><code>{{ run.tracking_uri }}</code></td></tr>
+    <tr><td>MLflow run</td><td>{% if run.mlflow_run_url %}<a href="{{ run.mlflow_run_url }}">{{ run.mlflow_run_url }}</a>{% else %}<span class="muted">tracking URI is not http; open the run in the MLflow UI by id</span>{% endif %}</td></tr>
+    <tr><td>baseline</td><td>{% if run.is_baseline %}this run{% elif run.baseline_run_id %}<code>{{ run.baseline_run_id }}</code>{% else %}{{ v.quality if v.quality == "no baseline set" else "none" }}{% endif %}</td></tr>
+    <tr><td>kit version</td><td>{{ run.kit_version }}</td></tr>
+   </tbody>
+  </table></div>
+ </div>
+ <p class="sub small" style="margin-top:10px">tasks: {% for t in run.task_ids %}<code>{{ t }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+</section>
+
+<section id="failures">
+ <h2><span class="n">7</span>Failures <span class="muted">({{ d.failures|length }})</span></h2>
+ {% if not d.failures %}
+ <p class="sub">No case failed a criterion or errored.</p>
+ {% endif %}
+ {% for f in d.failures %}
+ <article class="fail">
+  <h3><code>{{ f.task_id }}</code><span class="rep">rep {{ f.rep }}</span></h3>
+  <p class="crit">failed:
+   {% for c in f.failed_criteria %}<code>{{ c }}</code>{% else %}<span class="muted">no failed criteria</span>{% endfor %}
+   {% if f.refused %} &middot; <span class="err">refused</span>{% endif %}
+   {% if f.error %} &middot; <span class="err">agent error</span>{% endif %}
+  </p>
+  {% if f.error %}<pre class="err">{{ f.error }}</pre>{% endif %}
+  {% if f.rationales %}
+  <dl>
+   {% for r in f.rationales %}
+   <dt>{{ r.criterion }}{% if r.error %} <span class="err">(judge error)</span>{% endif %}</dt>
+   <dd>{{ r.rationale or r.error }}</dd>
+   {% endfor %}
+  </dl>
+  {% endif %}
+  <p class="sub small">final output ({{ f.final_output_chars|num }} chars{% if f.final_output_chars > f.final_output|length %}, truncated{% endif %})</p>
+  <pre class="out">{{ f.final_output if f.final_output else "(empty)" }}</pre>
+  <p class="links small">
+   {% if f.trace_url %}<a href="{{ f.trace_url }}">MLflow trace</a>{% elif f.trace_id %}trace <code>{{ f.trace_id }}</code> <span class="muted">(tracking URI is not http; open it in the MLflow UI)</span>{% else %}<span class="muted">no trace</span>{% endif %}
+   &middot; {{ f.wall_ms|ms }} &middot; {{ f.agent_cost_usd|usd }} &middot; {{ f.tool_calls }} tool calls
+  </p>
+ </article>
+ {% endfor %}
+</section>
+
+</main>
+<footer>
+ <strong>How to read this.</strong> {{ d.how_to_read }}
+</footer>
+</body>
+</html>

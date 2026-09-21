@@ -1,0 +1,42 @@
+# List prices in USD per 1M tokens. The kit computes cost from these for every agent,
+# regardless of how the agent is billed (subscription or API). Keep entries dated and sourced.
+version: "2026-09-17"
+currency: USD
+unit: per_1M_tokens
+providers:
+  anthropic:
+    source: "Anthropic first-party API rates as cached in the Claude Code claude-api skill (2026-06-24). Cache write = 1.25x input, cache read = 0.10x input unless noted."
+    models:
+      claude-fable-5-1: {input: 10.0, output: 50.0, cache_read: 0.25, cache_write: 12.5, effective: "2026-06-24"}
+      claude-fable-5:   {input: 10.0, output: 50.0, cache_read: 1.0,  cache_write: 12.5, effective: "2026-06-24"}
+      claude-opus-5:    {input: 5.0,  output: 25.0, cache_read: 0.5,  cache_write: 6.25, effective: "2026-06-24"}
+      claude-opus-4-8:  {input: 5.0,  output: 25.0, cache_read: 0.5,  cache_write: 6.25, effective: "2026-06-24"}
+      claude-opus-4-7:  {input: 5.0,  output: 25.0, cache_read: 0.5,  cache_write: 6.25, effective: "2026-06-24"}
+      claude-opus-4-6:  {input: 5.0,  output: 25.0, cache_read: 0.5,  cache_write: 6.25, effective: "2026-06-24"}
+      claude-sonnet-5:  {input: 2.0,  output: 10.0, cache_read: 0.2,  cache_write: 2.5,  effective: "2026-06-24"}
+      claude-sonnet-4-6: {input: 3.0, output: 15.0, cache_read: 0.3,  cache_write: 3.75, effective: "2026-06-24"}
+      claude-haiku-4-5: {input: 1.0,  output: 5.0,  cache_read: 0.1,  cache_write: 1.25, effective: "2026-06-24"}
+  openai:
+    source: "https://developers.openai.com/api/docs/pricing (verified 2026-09-17; standard tier, <272K context). Cache write from the Flagship table where shown; older models have no cache-write price, so cache_write = input. gpt-5-codex from its model page."
+    models:
+      gpt-6-astra:   {input: 10.0, output: 50.0, cache_read: 1.0,   cache_write: 12.5, effective: "2026-09-17"}
+      gpt-5.6-sol:   {input: 4.0,  output: 20.0, cache_read: 0.4,   cache_write: 5.0,  effective: "2026-09-17", note: "promotional price through at least 2026-11-21"}
+      gpt-5.6-terra: {input: 2.0,  output: 12.0, cache_read: 0.2,   cache_write: 2.5,  effective: "2026-09-17"}
+      gpt-5.6-luna:  {input: 0.2,  output: 1.2,  cache_read: 0.02,  cache_write: 0.25, effective: "2026-09-17"}
+      gpt-5.5:       {input: 5.0,  output: 30.0, cache_read: 0.5,   cache_write: 5.0,  effective: "2026-09-17"}
+      gpt-5.4:       {input: 2.5,  output: 15.0, cache_read: 0.25,  cache_write: 2.5,  effective: "2026-09-17"}
+      gpt-5.4-mini:  {input: 0.75, output: 4.5,  cache_read: 0.075, cache_write: 0.75, effective: "2026-09-17"}
+      gpt-5.3-codex: {input: 1.75, output: 14.0, cache_read: 0.175, cache_write: 1.75, effective: "2026-09-17"}
+      gpt-5.2:       {input: 1.75, output: 14.0, cache_read: 0.175, cache_write: 1.75, effective: "2026-09-17"}
+      gpt-5-codex:   {input: 1.25, output: 10.0, cache_read: 0.125, cache_write: 1.25, effective: "2026-09-17"}
+      gpt-5:         {input: 1.25, output: 10.0, cache_read: 0.125, cache_write: 1.25, effective: "2026-09-17"}
+      gpt-5-mini:    {input: 0.25, output: 2.0,  cache_read: 0.025, cache_write: 0.25, effective: "2026-09-17"}
+      gpt-5-nano:    {input: 0.05, output: 0.4,  cache_read: 0.005, cache_write: 0.05, effective: "2026-09-17"}
+      gpt-4.1:       {input: 2.0,  output: 8.0,  cache_read: 0.5,   cache_write: 2.0,  effective: "2026-09-17"}
+# Model ids reported by agents that should resolve to a priced entry.
+aliases:
+  gpt-5.6: gpt-5.6-sol
+  claude-haiku-4-5-20251001: claude-haiku-4-5
+  opus: claude-opus-5
+  sonnet: claude-sonnet-5
+  haiku: claude-haiku-4-5

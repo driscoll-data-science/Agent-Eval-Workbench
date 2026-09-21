@@ -1,0 +1,50 @@
+# Normalizes raw tool names per agent into shared categories so tool-call distributions
+# are comparable across agents. Unmapped names fall into "other".
+categories: [read, write, exec, search, web, other]
+agents:
+  claude_code:
+    Read: read
+    Glob: search
+    Grep: search
+    LS: read
+    NotebookRead: read
+    Edit: write
+    MultiEdit: write
+    Write: write
+    NotebookEdit: write
+    Bash: exec
+    WebSearch: web
+    WebFetch: web
+    Task: other
+    Agent: other
+    TodoWrite: other
+    Skill: other
+    mcp_tool_call: other
+  claude_sdk:
+    Read: read
+    Glob: search
+    Grep: search
+    Edit: write
+    MultiEdit: write
+    Write: write
+    Bash: exec
+    WebSearch: web
+    WebFetch: web
+    Task: other
+    TodoWrite: other
+    mcp_tool_call: other
+  codex:
+    shell: exec
+    command_execution: exec
+    apply_patch: write
+    file_change: write
+    web_search: web
+    mcp_tool_call: other
+    collab_tool_call: other
+  fake:
+    Read: read
+    Grep: search
+    Edit: write
+    Write: write
+    Bash: exec
+    WebSearch: web

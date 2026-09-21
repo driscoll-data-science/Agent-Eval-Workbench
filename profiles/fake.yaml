@@ -1,0 +1,5 @@
+name: fake
+adapter: fake
+model: fake-model-1
+params:
+  seed: 0

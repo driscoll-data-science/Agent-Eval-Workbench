@@ -1,0 +1,40 @@
+# Copy to ./aeb.toml or $AEB_HOME/aeb.toml. Environment variables override: AEB_HOME,
+# MLFLOW_TRACKING_URI, AEB_JUDGE_BACKEND, AEB_JUDGE_MODEL, AEB_CONCURRENCY, AEB_REPS.
+# Credentials are never read from this file.
+
+[paths]
+# home = "~/.aeb"                 # private data: suites, labels, runs, reports, mlflow.db
+# extra_suite_dirs = []           # additional directories containing <suite>/suite.yaml
+# extra_profile_dirs = []
+
+[mlflow]
+host = "127.0.0.1"
+port = 5050
+# tracking_uri = "http://cortex:5000"   # remote mode: point at another MLflow server
+
+[run]
+reps = 2
+concurrency = 4
+agent_timeout_s = 900
+
+[judge]
+backend = "claude_code"           # claude_code (subscription) | mlflow (API key) | fake (CI)
+model = "claude-opus-5"
+effort = "high"
+concurrency = 4
+timeout_s = 180
+determinism_sample = 0.10         # share of cases re-judged once to measure judge variance
+
+[calibration]
+min_raw_agreement = 0.85
+min_kappa = 0.60
+
+[compare]
+ci_level = 0.95
+bootstrap_n = 2000
+practical_floor = 0.0             # minimum delta (in metric units) worth flagging
+
+[drift]
+js_threshold = 0.10
+alpha = 0.05
+min_rate_delta = 0.10          # proportions (refusal, error) must move at least this much

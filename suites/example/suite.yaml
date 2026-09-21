@@ -1,0 +1,163 @@
+name: example
+description: >
+  Ten general-domain cases that exercise both task kinds. Small enough to run end to end with
+  the fake agent in CI, real enough to show what a suite looks like.
+version: "1"
+criteria:
+  - name: correct
+    kind: judge
+    description: The output states the correct answer to the question as given in the reference material, allowing equivalent wording.
+  - name: grounded
+    kind: judge
+    description: The output does not assert facts, numbers, names, or API details that are absent from or contradicted by the task and reference material.
+  - name: follows_format
+    kind: judge
+    description: The output obeys every explicit formatting or length instruction in the task (for example "one sentence", "a JSON object", "no code").
+  - name: concise
+    kind: judge
+    description: The output contains no filler, restatement of the question, or unrequested elaboration; it is as short as the task allows while still complete.
+  - name: tests_pass
+    kind: programmatic
+    description: The hidden test command exits 0 in the workspace after the agent finishes.
+  - name: only_allowed_paths
+    kind: programmatic
+    description: The agent changed only files matching the task's allowed paths and none it was told not to touch.
+  - name: not_noop
+    kind: programmatic
+    description: The workspace differs from the fixture after a claimed success.
+  - name: minimal_diff
+    kind: judge
+    description: The diff changes only what the task requires; no unrelated refactors, reformatting, renamed identifiers, or added files beyond what the task calls for.
+  - name: readable
+    kind: judge
+    description: New or changed code is idiomatic for the language, clearly named, and free of leftover debugging output or commented-out code.
+  - name: explanation_accurate
+    kind: judge
+    description: The agent's final message describes exactly the changes present in the diff, without claiming work that was not done or omitting files that were changed.
+tasks:
+  - id: qa-capital-australia
+    kind: qa
+    tags: [factual]
+    prompt: "What is the capital city of Australia? Answer in one sentence."
+    reference: "Canberra is the capital of Australia."
+    expected: "Canberra"
+    criteria: [correct, grounded, follows_format, concise]
+  - id: qa-leap-year
+    kind: qa
+    tags: [reasoning]
+    prompt: "Is the year 1900 a leap year in the Gregorian calendar? Answer yes or no, then give the rule that decides it in one sentence."
+    reference: "No. Years divisible by 100 are not leap years unless they are also divisible by 400, and 1900 is divisible by 100 but not by 400."
+    expected: "no"
+    criteria: [correct, grounded, follows_format, concise]
+  - id: qa-json-extract
+    kind: qa
+    tags: [format]
+    prompt: |
+      Extract the person's name and age from this sentence and return ONLY a JSON object with keys "name" and "age" (age as an integer), nothing else:
+      "After the ceremony, Priya Natarajan, who turned 34 last spring, thanked the volunteers."
+    reference: '{"name": "Priya Natarajan", "age": 34}'
+    expected: '"age": 34'
+    criteria: [correct, grounded, follows_format, concise]
+  - id: qa-unit-convert
+    kind: qa
+    tags: [reasoning]
+    prompt: "A recipe calls for 250 grams of flour. Using 1 cup = 125 grams, how many cups is that? Reply with just the number."
+    reference: "2"
+    expected: "2"
+    criteria: [correct, grounded, follows_format, concise]
+  - id: qa-grounded-refusal
+    kind: qa
+    tags: [grounding]
+    prompt: |
+      Using only the passage below, what year was the bridge completed? If the passage does not say, reply exactly: "The passage does not say."
+      Passage: "The Halvorsen Bridge spans 412 metres and carries two rail tracks. It was designed by Ingrid Halvorsen and repainted in 2019."
+    reference: "The passage does not say."
+    expected: "does not say"
+    criteria: [correct, grounded, follows_format, concise]
+  - id: qa-python-behavior
+    kind: qa
+    tags: [coding]
+    prompt: "In Python 3, what does `sorted([3, 1, 2], reverse=True)` return? Reply with the literal list only."
+    reference: "[3, 2, 1]"
+    expected: "[3, 2, 1]"
+    criteria: [correct, grounded, follows_format, concise]
+  - id: qa-summarize-constraint
+    kind: qa
+    tags: [format]
+    prompt: |
+      Summarize the following in at most 12 words:
+      "The maintenance window moved from Saturday night to Sunday morning because the database team needs the Saturday slot for a failover test."
+    reference: "Maintenance moved to Sunday morning; database team needs Saturday for failover test."
+    rubric_notes: "Count words. Thirteen or more words fails follows_format."
+    criteria: [correct, grounded, follows_format, concise]
+  - id: qa-ambiguous-acronym
+    kind: qa
+    tags: [grounding]
+    prompt: "In the context of HTTP, what does the acronym CORS stand for? One line."
+    reference: "Cross-Origin Resource Sharing"
+    expected: "Cross-Origin Resource Sharing"
+    criteria: [correct, grounded, follows_format, concise]
+  - id: ws-slugify-unicode
+    kind: workspace
+    tags: [coding, bugfix]
+    prompt: |
+      The function `slugify` in slug.py drops non-ASCII letters, so "Crème Brûlée" becomes "crme-brle". Fix it so accented Latin letters are transliterated to their ASCII base letters ("creme-brulee") while keeping the existing behavior for everything else. Do not change the public signature and do not add dependencies. Run the existing tests before you finish.
+    fixture: fixtures/slugify
+    hidden_tests: hidden_tests/slugify
+    checks:
+      command: "python -m pytest -q"
+      timeout_s: 120
+      must_not_change: ["tests/test_slug.py", "README.md"]
+      allowed_paths: ["slug.py"]
+    criteria: [tests_pass, only_allowed_paths, not_noop, minimal_diff, readable, explanation_accurate]
+    reference_patch:
+      slug.py: |
+        """Tiny slug helper used by the example suite."""
+
+        import re
+        import unicodedata
+
+
+        def slugify(text: str) -> str:
+            """Lowercase, transliterate accented Latin letters to ASCII, and join words with '-'."""
+            normalized = unicodedata.normalize("NFKD", text)
+            ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+            words = re.findall(r"[a-z0-9]+", ascii_text.lower())
+            return "-".join(words)
+  - id: ws-inventory-negative
+    kind: workspace
+    tags: [coding, validation]
+    prompt: |
+      `Inventory.remove(name, qty)` in inventory.py lets stock go negative. Make it raise `ValueError` with a clear message when `qty` exceeds the current stock, and leave stock unchanged in that case. Keep all existing behavior otherwise. Run the tests before you finish.
+    fixture: fixtures/inventory
+    hidden_tests: hidden_tests/inventory
+    checks:
+      command: "python -m pytest -q"
+      timeout_s: 120
+      must_not_change: ["tests/test_inventory.py"]
+      allowed_paths: ["inventory.py"]
+    criteria: [tests_pass, only_allowed_paths, not_noop, minimal_diff, readable, explanation_accurate]
+    reference_patch:
+      inventory.py: |
+        """Minimal inventory model used by the example suite."""
+
+
+        class Inventory:
+            def __init__(self) -> None:
+                self._stock: dict[str, int] = {}
+
+            def add(self, name: str, qty: int) -> None:
+                if qty <= 0:
+                    raise ValueError("qty must be positive")
+                self._stock[name] = self._stock.get(name, 0) + qty
+
+            def remove(self, name: str, qty: int) -> None:
+                if qty <= 0:
+                    raise ValueError("qty must be positive")
+                current = self._stock.get(name, 0)
+                if qty > current:
+                    raise ValueError(f"cannot remove {qty} {name}: only {current} in stock")
+                self._stock[name] = current - qty
+
+            def count(self, name: str) -> int:
+                return self._stock.get(name, 0)

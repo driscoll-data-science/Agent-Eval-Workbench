@@ -1,0 +1,10 @@
+name: claude_sdk_reference
+adapter: claude_sdk
+model: claude-sonnet-5
+params:
+  entrypoint: agent_eval_bench.agents.reference_sdk_agent:run
+  permission_mode: acceptEdits
+  allowed_tools: [Read, Edit, Write, Glob, Grep, Bash]
+  max_turns: 40
+  max_budget_usd: 2.0
+  effort: high

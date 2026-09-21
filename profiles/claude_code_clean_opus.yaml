@@ -1,0 +1,10 @@
+name: claude_code_clean_opus
+adapter: claude_code
+model: claude-opus-5
+params:
+  clean_slate: true
+  permission_mode: acceptEdits
+  allowed_tools: "Read,Edit,Write,Glob,Grep,Bash"
+  max_turns: 40
+  max_budget_usd: 4.0
+  effort: high

@@ -1,0 +1,54 @@
+[project]
+name = "agent-eval-bench"
+version = "0.1.0"
+description = "Reusable MLflow-based evaluation kit for AI agents: golden-task runner, calibrated LLM judge, cost accounting, baseline comparison, and drift detection."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [{ name = "Jonathan Driscoll" }]
+dependencies = [
+  "mlflow[genai]>=3.16,<4",
+  "claude-agent-sdk>=0.2",
+  "anthropic>=1.6",
+  "typer>=0.27",
+  "pydantic>=2.7",
+  "pyyaml>=6",
+  "numpy>=1.26",
+  "scipy>=1.12",
+  "jinja2>=3.1",
+  "tomli-w>=1.0",
+]
+
+[project.optional-dependencies]
+crosscheck = ["litellm>=1.40"]
+
+[project.scripts]
+aeb = "agent_eval_bench.cli:app"
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "pytest-timeout>=2.3",
+  "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_eval_bench"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["B008", "E501"]  # formatter owns line length; long strings stay readable
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 600
+filterwarnings = ["ignore::DeprecationWarning"]

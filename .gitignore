@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Private data: never commit results, real suites, labels, or MLflow data
+.aeb/
+mlruns/
+mlartifacts/
+mlflow.db
+*.db
+runs/
+reports/
+labels/
+suites/*
+!suites/example/
+!suites/README.md
+
+# Local config with paths
+aeb.local.toml
+
+# OS
+.DS_Store
+
+# Playwright MCP screenshots and snapshots
+.playwright-mcp/
+
+# Local Claude Code hook logs
+.claude/*.log

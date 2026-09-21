@@ -1,0 +1,80 @@
+{# Index of every recorded run, newest first. Self-contained: no scripts or external assets. #}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>aeb runs</title>
+<style>
+:root{color-scheme:light;
+ --page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--muted:#898781;
+ --grid:#e1e0d9;--border:rgba(11,11,11,.10);--series-1:#2a78d6;
+ --good:#0ca30c;--warning:#fab219;--serious:#ec835a;--critical:#d03b3b;}
+@media (prefers-color-scheme: dark){
+ :root{color-scheme:dark;
+  --page:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--muted:#898781;
+  --grid:#2c2c2a;--border:rgba(255,255,255,.10);--series-1:#3987e5;}}
+*{box-sizing:border-box}
+html{background:var(--page)}
+body{margin:0;padding:16px;background:var(--page);color:var(--ink);
+ font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1180px;margin:0 auto}
+a{color:var(--series-1)}
+h1{font-size:22px;margin:0 0 4px}
+.meta{color:var(--ink-2);margin:0 0 14px}
+.muted{color:var(--muted)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 16px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--grid);text-align:left;white-space:nowrap}
+th{color:var(--ink-2);font-weight:600;font-size:12.5px}
+td.n,th.n{text-align:right}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:1px 9px;border-radius:999px;
+ border:1px solid var(--border);font-weight:600;font-size:12.5px}
+.badge .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.badge.good .dot{background:var(--good)}
+.badge.warning .dot{background:var(--warning)}
+.badge.serious .dot{background:var(--serious)}
+.badge.critical .dot{background:var(--critical)}
+.badge .g{color:var(--ink-2)}
+.base{font-weight:700;color:var(--ink)}
+</style>
+</head>
+<body>
+<main>
+ <h1>aeb runs</h1>
+ <p class="meta">{{ n_runs }} run{{ "" if n_runs == 1 else "s" }} &middot; {{ n_baselines }} baseline{{ "" if n_baselines == 1 else "s" }} set
+  &middot; generated {{ generated_at }}</p>
+ <section>
+ <div class="tbl"><table>
+  <thead><tr>
+   <th>run</th><th>started</th><th>suite</th><th>profile</th><th class="n">cases</th><th class="n">pass rate</th>
+   <th>quality</th><th>behavior</th><th>baseline</th><th class="n">agent cost</th><th class="n">judge cost</th><th>report</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+   <td><a href="{{ r.report_href }}"><code>{{ r.short_id }}</code></a>{% if not r.finished %} <span class="muted">(running)</span>{% endif %}</td>
+   <td>{{ r.started_at }}</td>
+   <td>{{ r.suite }} <span class="muted">v{{ r.suite_version }}</span></td>
+   <td>{{ r.profile }} <span class="muted">({{ r.adapter }}{% if r.model %}, {{ r.model }}{% endif %})</span></td>
+   <td class="n">{{ r.n_cases|num if r.n_cases is not none else "n/a" }}</td>
+   <td class="n">{{ r.pass_rate|pct }}</td>
+   <td><span class="badge {{ r.quality_verdict|vclass }}"><span class="dot"></span><span class="g">{{ r.quality_verdict|vglyph }}</span>{{ r.quality_verdict|label }}</span></td>
+   <td><span class="badge {{ r.behavior_verdict|vclass }}"><span class="dot"></span><span class="g">{{ r.behavior_verdict|vglyph }}</span>{{ r.behavior_verdict|label }}</span></td>
+   <td>{% if r.is_baseline %}<span class="base">&#9733; baseline</span>{% else %}<span class="muted">&mdash;</span>{% endif %}</td>
+   <td class="n">{{ r.agent_cost_usd|usd }}</td>
+   <td class="n">{{ r.judge_cost_usd|usd }}</td>
+   <td><a href="{{ r.report_href }}">report</a>{% if not r.report_built %} <span class="muted">(not built; run <code>aeb report build {{ r.short_id }}</code>)</span>{% endif %}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="12" class="muted">no runs recorded yet</td></tr>
+  {% endfor %}
+  </tbody>
+ </table></div>
+ </section>
+</main>
+</body>
+</html>

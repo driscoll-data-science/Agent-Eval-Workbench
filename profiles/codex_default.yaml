@@ -1,0 +1,9 @@
+name: codex_default
+adapter: codex
+model: gpt-5.6               # Codex JSONL never reports the model, so pin it here to price it
+params:
+  sandbox: workspace-write
+  isolate_home: true         # throwaway CODEX_HOME with only auth.json copied in
+  disable_agents_md: true    # -c project_doc_max_bytes=0
+  ignore_user_config: true
+  reasoning_effort: null

@@ -39,8 +39,9 @@ Updated: 2026-09-20 (README dress-up; first push to GitHub)
   `uv run ruff check src tests` -> clean. CI workflow at .github/workflows/ci.yml mirrors this.
 
 ## Broken / degraded
-- Remote is https://github.com/driscoll-data-science/Agent-Eval-Workbench (public). First push
-  of the kit happened 2026-09-20; CI status and badge are checked after that push (see below).
+- (resolved) Remote is https://github.com/driscoll-data-science/Agent-Eval-Workbench (public).
+  Pushed 2026-09-20. First CI run failed on ruff over suite fixtures; fixed by excluding
+  fixtures and hidden tests from ruff. Second run green in 3m02s; badge shows passing.
 - `claude -p --bare` and an empty CLAUDE_CONFIG_DIR both lose the keychain login. Local runs
   use `--strict-mcp-config --setting-sources ""` instead; remote mode needs a setup token.
 - Subscription capacity is real: the 5-hour window was exhausted once during the build
@@ -79,6 +80,8 @@ Updated: 2026-09-20 (README dress-up; first push to GitHub)
   (report top, drift panel, failures, index, MLflow trace), CLI excerpts for compare/drift/
   calibrate, a suite-format example, architecture diagram, layout, config, testing.
 - Report index no longer prints the absolute reports path (privacy in screenshots).
+- ruff excludes suites/**/fixtures and suites/**/hidden_tests (agent workspaces, kept verbatim).
+- HTTPS push needed http.postBuffer raised (set per-repo) after the first push disconnected.
 - Fake judge failure rationales now say why they failed instead of "Heuristic pass."
 - All design decisions: docs/SPEC.md. Additional build-time decisions (inconsequential):
   - ruff E501 ignored; the formatter owns line length (long prompt strings stay readable).
@@ -105,7 +108,7 @@ Updated: 2026-09-20 (README dress-up; first push to GitHub)
    one per theme, or re-draft three batches with distinct topics (~3 Opus calls).
 2. Label 40 calibration cases (`aeb labels sample <run>` then MLflow UI or `aeb labels tui`)
    so the judge gets an agreement rate. Until then reports say "judge not yet calibrated".
-3. (done) Repo created and pushed; confirm the CI badge turns green on GitHub.
+3. (done) Repo pushed, CI green, badge passing.
 4. Codex: install (`npm i -g @openai/codex`) and `codex login` when you want live Codex runs.
 5. The one `general` run is on the uncurated suite; treat its numbers as a preview until curated.
 6. Known design caveat from review: drift calls behavior "changed" if any of nine shifts changes at alpha 0.05 with no multiplicity correction. Options: leave (sensitive, unsigned), Bonferroni, or raise the JS floor.
